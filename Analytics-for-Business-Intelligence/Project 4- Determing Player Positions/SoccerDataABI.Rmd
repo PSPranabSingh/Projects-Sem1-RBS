@@ -1,0 +1,335 @@
+---
+title: "SoccerDataABI"
+author: "Pranab Singh"
+date: "4 December 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+chooseCRANmirror(graphics = FALSE, ind = 1)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+#used packages
+library(tidyverse)  # for data wrangling
+library(stringr)    # for string manipulations
+#install.packages('ggbiplot')
+#install.packages('ggbiplot', dependencies=TRUE, repos='http://cran.rstudio.com/')
+#library(ggbiplot)   # pca biplot with ggplot
+library(ggplot2)
+library(Rtsne)      # implements the t-SNE algorithm
+#install.packages('kohonen')
+library(kohonen)    # implements self organizing maps
+library(hrbrthemes) # nice themes for ggplot
+library(GGally)
+
+fifa_tbl = read.csv("C:/Users/Pranab/Documents/RWorkspace/ABI/Final Group Assignment/CompleteDataset.csv")
+
+
+glimpse(fifa_tbl)
+names(fifa_tbl)
+```
+
+```{r}
+fifa_tbl <- fifa_tbl %>% select(Acceleration:Volleys,`Preferred.Positions`)
+head(fifa_tbl)
+head(fifa_tbl$`Preferred.Positions`)
+
+fifa_tbl <- fifa_tbl %>% 
+  mutate(position = word(`Preferred.Positions`,1)) %>% 
+  mutate(position = factor(position,
+                           levels = c("GK","CB","RB","LB","RWB","LWB","CDM",
+                                      "CM","RM","LM","CAM",
+                                      "CF","RW","LW","ST")))
+defense  <- c("CB","RB","LB","RWB","LWB")
+midfield <- c("CDM","CM","RM","LM","CAM")
+offense  <- c("CF","RW","LW","ST")
+
+fifa_tbl <- fifa_tbl %>% 
+  mutate(position2 = ifelse(position %in% defense,"D",
+                            ifelse(position %in% midfield,"M",
+                                   ifelse(position %in% offense,"O","GK")))) %>% 
+  mutate(position2 = factor(position2,levels = c("GK","D","M","O"))) %>% 
+  select(-`Preferred.Positions`)
+
+names(fifa_tbl) <- str_replace_all(names(fifa_tbl)," ","_")
+
+sapply(fifa_tbl, class)
+```
+
+```{r}
+library(GGally)
+
+#fifa_tbl %>% select(Acceleration:Volleys,position2) %>% ggpairs(columns = c(1:5,12),aes(col=position2),)
+
+names(fifa_tbl) <- str_replace_all(names(fifa_tbl),"_"," ")
+
+is.factor(fifa_tbl$Acceleration)
+
+fifa_tbl$Acceleration = as.numeric(fifa_tbl$Acceleration)
+
+is.numeric(fifa_tbl$Acceleration)
+
+
+fifa_tbl$Aggression = as.numeric(fifa_tbl$Aggression)
+is.numeric(fifa_tbl$Aggression)
+
+fifa_tbl$Agility = as.numeric(fifa_tbl$Agility)
+is.numeric(fifa_tbl$Agility)
+
+fifa_tbl$Balance = as.numeric(fifa_tbl$Balance)
+is.numeric(fifa_tbl$Balance)
+
+fifa_tbl$Ball.control = as.numeric(fifa_tbl$Ball.control)
+is.numeric(fifa_tbl$Ball.control)
+
+fifa_tbl$Composure = as.numeric(fifa_tbl$Composure)
+is.numeric(fifa_tbl$Composure)
+
+fifa_tbl$Crossing = as.numeric(fifa_tbl$Crossing)
+is.numeric(fifa_tbl$Crossing)
+
+fifa_tbl$Curve = as.numeric(fifa_tbl$Curve)
+is.numeric(fifa_tbl$Curve)
+
+fifa_tbl$Dribbling = as.numeric(fifa_tbl$Dribbling)
+is.numeric(fifa_tbl$Dribbling)
+
+fifa_tbl$Finishing = as.numeric(fifa_tbl$Finishing)
+is.numeric(fifa_tbl$Finishing)
+
+fifa_tbl$Free.kick.accuracy = as.numeric(fifa_tbl$Free.kick.accuracy)
+is.numeric(fifa_tbl$Free.kick.accuracy)
+
+fifa_tbl$GK.diving = as.numeric(fifa_tbl$GK.diving)
+is.numeric(fifa_tbl$GK.diving)
+
+fifa_tbl$GK.handling = as.numeric(fifa_tbl$GK.handling)
+is.numeric(fifa_tbl$GK.handling)
+
+fifa_tbl$GK.kicking = as.numeric(fifa_tbl$GK.kicking)
+is.numeric(fifa_tbl$GK.kicking)
+
+fifa_tbl$GK.positioning = as.numeric(fifa_tbl$GK.positioning)
+is.numeric(fifa_tbl$GK.positioning)
+
+
+fifa_tbl$GK.reflexes = as.numeric(fifa_tbl$GK.reflexes)
+is.numeric(fifa_tbl$GK.reflexes)
+
+fifa_tbl$Heading.accuracy = as.numeric(fifa_tbl$Heading.accuracy)
+is.numeric(fifa_tbl$Heading.accuracy)
+
+fifa_tbl$Interceptions = as.numeric(fifa_tbl$Interceptions)
+is.numeric(fifa_tbl$Interceptions)
+
+fifa_tbl$Jumping = as.numeric(fifa_tbl$Jumping)
+is.numeric(fifa_tbl$Jumping)
+
+fifa_tbl$Long.passing = as.numeric(fifa_tbl$Long.passing)
+is.numeric(fifa_tbl$Long.passing)
+
+fifa_tbl$Long.shots = as.numeric(fifa_tbl$Long.shots)
+is.numeric(fifa_tbl$Long.shots)
+
+fifa_tbl$Marking = as.numeric(fifa_tbl$Marking)
+is.numeric(fifa_tbl$Marking)
+
+fifa_tbl$Penalties= as.numeric(fifa_tbl$Penalties)
+is.numeric(fifa_tbl$Penalties)
+
+fifa_tbl$Positioning = as.numeric(fifa_tbl$Positioning)
+is.numeric(fifa_tbl$Positioning)
+
+
+fifa_tbl$Reactions = as.numeric(fifa_tbl$Reactions)
+is.numeric(fifa_tbl$Reactions)
+
+fifa_tbl$Short.passing = as.numeric(fifa_tbl$Short.passing)
+is.numeric(fifa_tbl$Short.passing)
+
+fifa_tbl$Shot.power = as.numeric(fifa_tbl$Shot.power)
+is.numeric(fifa_tbl$Shot.power)
+
+fifa_tbl$Sliding.tackle = as.numeric(fifa_tbl$Sliding.tackle)
+is.numeric(fifa_tbl$Sliding.tackle)
+
+fifa_tbl$Sprint.speed = as.numeric(fifa_tbl$Sprint.speed)
+is.numeric(fifa_tbl$Sprint.speed)
+
+fifa_tbl$Stamina = as.numeric(fifa_tbl$Stamina)
+is.numeric(fifa_tbl$Stamina)
+
+fifa_tbl$Standing.tackle = as.numeric(fifa_tbl$Standing.tackle)
+is.numeric(fifa_tbl$Standing.tackle)
+
+fifa_tbl$Strength = as.numeric(fifa_tbl$Strength)
+is.numeric(fifa_tbl$Strength)
+
+fifa_tbl$Vision = as.numeric(fifa_tbl$Vision)
+is.numeric(fifa_tbl$Vision)
+
+fifa_tbl$Volleys = as.numeric(fifa_tbl$Volleys)
+is.numeric(fifa_tbl$Volleys)
+
+fifa_tbl$Jumping = as.numeric(fifa_tbl$Jumping)
+is.numeric(fifa_tbl$Jumping)
+```
+
+```{r}
+sapply(fifa_tbl, class)
+
+
+fifa_pca <- fifa_tbl %>% 
+  select(Acceleration:Volleys) %>%
+  prcomp(center=TRUE,scale.=TRUE)
+
+tibble(sd = fifa_pca$sdev, 
+       pc = 1:length(sd)) %>% 
+  mutate(cumvar = cumsum((sd^2)/sum(sd^2))) %>% 
+  ggplot(aes(pc,cumvar))+geom_line()+geom_point()+
+  labs(x="Principal Component",y="Cummulative Proportion of Variance Explained")+
+  theme_ipsum_rc()
+```
+
+```{r}
+#ggplot(fifa_pca, obs.scale = 1, var.scale = 1, alpha = 0.01,
+#         groups = fifa_tbl$position2, varname.size = 4, varname.adjust = 2,
+#        ellipse = TRUE, circle = FALSE) +
+# scale_color_discrete(name = '') +
+# scale_x_continuous(limits = c(-20,20))+
+# scale_y_continuous(limits = c(-10,10))+
+# theme_ipsum_rc()+
+# theme(legend.direction = 'horizontal', legend.position = 'bottom')
+```
+
+```{r}
+library(dplyr)
+set.seed(12)
+
+fifa_tsne <- fifa_tbl %>%
+  select(Acceleration:Volleys) %>%
+  Rtsne(perplexity = 50, max_iter = 1000, check_duplicates = FALSE)
+
+tibble(x = fifa_tsne$Y[,1],
+       y = fifa_tsne$Y[,2],
+       position = fifa_tbl$position2) %>%
+  ggplot(aes(x,y)) + geom_point(aes(col = position), alpha = 0.25) +
+  theme_ipsum_rc()+
+  theme(legend.position = "bottom")+
+  labs(x="",y="")
+```
+
+```{r}
+fifa_som <- fifa_tbl %>% 
+  select(Acceleration:Volleys) %>%
+  scale() %>%
+  som(grid = somgrid(20, 20, "hexagonal"), rlen = 300)
+
+plot(fifa_som, type="changes")
+
+plot(fifa_som, type="count", shape = "straight")
+
+par(mfrow=c(1,2))
+plot(fifa_som, type="mapping", pch=20,
+     col = c("#F8766D","#7CAE00","#00B0B5","#C77CFF")[as.integer(fifa_tbl$position2)],
+     shape = "straight")
+plot(fifa_som, type="codes",shape="straight")
+```
+
+___________________________
+```{r}
+#used packages
+library(tidyverse)  # for data wrangling
+library(hrbrthemes) # nice themes for ggplot
+library(caret) # ML algorithms
+
+glimpse(fifa_tbl)
+
+set.seed(6185)
+
+train_sample <- createDataPartition(fifa_tbl$position2,p = 0.8,list = FALSE)
+train_data   <- fifa_tbl[train_sample,] %>% select(-position) 
+test_data    <- fifa_tbl[-train_sample,] %>% select(-position) 
+```
+
+```{r}
+train_control <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+grid_knn <- expand.grid(.k=seq(20,120,5))
+fifa_knn <- train(position2~., data=train_data, method = "knn",
+                  trControl = train_control,preProcess = c("center","scale"),
+                  tuneGrid = grid_knn)
+fifa_knn
+
+plot(fifa_knn)
+
+fifa_knn_predict <- predict(fifa_knn,newdata = test_data)
+confusionMatrix(fifa_knn_predict,test_data$position2)
+```
+
+```{r}
+#Random Forest
+train_control <- trainControl(method = "repeatedcv",number = 10, repeats = 3)
+grid_rf <- expand.grid(.mtry=c(4,8,12,16,20))
+fifa_rf <- train(position2~., data=train_data, method = "rf",
+                 trControl = train_control,preProcess = c("center","scale"),
+                 tuneGrid = grid_rf)
+fifa_rf
+```
+
+```{r}
+fifa_rf_predict <- predict(fifa_rf,newdata = test_data)
+confusionMatrix(fifa_rf_predict,test_data$position2)
+```
+
+```{r}
+train_control <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+grid_svm <- expand.grid(.cost=c(0.75, 0.9, 1, 1.1, 1.25,2))
+fifa_svm_linear <- train(position2 ~., data = train_data, method = "svmLinear2",
+                    trControl=train_control,
+                    preProcess = c("center", "scale"),
+                    tuneGrid = grid_svm)
+fifa_svm_linear
+```
+
+```{r}
+plot(fifa_svm_linear)
+
+fifa_svm_linear_predict <- predict(fifa_svm_linear,newdata = test_data)
+confusionMatrix(fifa_svm_linear_predict,test_data$position2)
+```
+
+```{r}
+train_control <- trainControl(method = "repeatedcv",number = 10, repeats = 3)
+grid_nnet <- expand.grid(.decay=c(0.2,0.5,0.7),.size=c(1,5,10,15))
+fifa_nnet <- train(position2~., data=train_data, method = "nnet",
+                    trControl = train_control, preProcess = c("center","scale"),
+                    tuneGrid = grid_nnet, maxit = 500, abstol=1e-2)
+fifa_nnet
+plot(fifa_nnet)
+
+fifa_nnet_predict <- predict(fifa_nnet,newdata = test_data)
+confusionMatrix(fifa_nnet_predict,test_data$position2)
+```
+
+```{r}
+#best training performances
+train_performance <- t(rbind(knn = apply(fifa_knn$results[,2:3],2,max),
+                             rf  = apply(fifa_rf$results[,2:3],2,max),
+                             svm = apply(fifa_svm_linear$results[,2:3],2,max),
+                             nnet= apply(fifa_nnet$results[,3:4],2,max))) 
+predicted <-  tibble(knn = fifa_knn_predict,
+                     rf  = fifa_rf_predict,
+                     svm = fifa_svm_linear_predict,
+                     nnet= fifa_nnet_predict)
+ 
+#test performance
+test_performance <- apply(predicted, 2, postResample, obs = test_data$position2)
+
+train_performance
+
+test_performance
+```

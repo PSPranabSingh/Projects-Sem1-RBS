@@ -1,0 +1,49 @@
+import hashlib
+
+##for list of 10 names
+
+names_list =['Noah', 'Liam', 'Benjamin', 'Oliver', 'William', 'James', 'Joe', 'Lucas', 'Mason', 'Michael']
+
+hashmap={}
+
+for names in names_list:
+
+    results=hashlib.sha256(names.encode('utf-8')).hexdigest()
+
+    hashmap[names]=divmod(int(results,base=16), 10)
+
+print(hashmap)
+
+## for list of 20 names
+
+names_list2 =['Emily','Madison','Emma','Hannah','Olivia','Abigail','Isabella','Ashley','Samantha','Elizabeth','Alexis','Sarah','Alyssa','Grace','Sophia','Lauren','Ava','Jessica','Natalie','Anna']
+
+hashmap2={}
+
+for names2 in names_list2:
+
+    results2=hashlib.sha256(names2.encode('utf-8')).hexdigest()
+
+    hashmap2[names2]=divmod(int(results2,base=16), 20)
+
+print(hashmap2)
+
+## for list of 50 names
+
+names_list3 =['James','Mary','John','Patricia','Robert','Jennifer','Michael','Linda','William','Elizabeth','David','Barbara','Richard','Susan','Joseph','Jessica','Thomas','Sarah','Charles','Margaret','Christopher','Karen','Daniel','Nancy','Matthew','Lisa','Anthony','Betty','Donald','Dorothy','Mark','Sandra','Paul','Ashley','Steven','Kimberly','Andrew','Donna','Kenneth','Emily','George','Carol','Joshua','Michelle','Kevin','Amanda','Brian','Melissa','Edward','Deborah']
+
+hashmap3={}
+
+for names3 in names_list3:
+
+    results3=hashlib.sha256(names3.encode('utf-8')).hexdigest()
+
+    hashmap3[names3]=divmod(int(results3,base=16), 50)
+
+print(hashmap3)
+
+#In hash function, greater the mod values, lesser are the chances of collision.
+
+
+
+

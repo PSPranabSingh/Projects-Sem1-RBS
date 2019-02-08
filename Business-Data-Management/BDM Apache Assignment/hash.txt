@@ -1,0 +1,25 @@
+dict()
+
+Array 
+
+Hash function- key to array index
+
+Collision handling
+
+set up array
+
+add('', )---key value pair
+
+Use a hash fuhnction SHA256:-
+index=hash function(key)
+
+get('key')
+
+----
+
+class HashMap
+
+def.size=
+def.map=[none]* self.size
+
+

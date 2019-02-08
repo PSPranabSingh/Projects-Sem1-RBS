@@ -1,0 +1,312 @@
+---
+title: "Untitled"
+author: "Akhil Patil"
+date: "December 8, 2018"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+chooseCRANmirror(graphics = FALSE, ind = 1)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(tidyr)
+library(corrplot)
+library(forecast)
+library(tseries)
+library(TSA)
+library(tibble)
+library(TTR)
+
+```
+
+```{r}
+s_data <- read.csv("C:/Users/Pranab/Documents/RBS Sem1/BFO/Final Project BF/all_stocks_5yr.csv")
+attach(s_data)
+s_data = na.omit(s_data)
+summary(s_data)
+
+```
+
+
+Data Cleaning 
+
+```{r}
+s_data[is.na(s_data)] <- 0
+summary(s_data)
+
+s_data$date = as.Date(s_data$date)
+
+str(s_data)
+
+```
+
+
+
+Distribution of Closing price
+
+```{r}
+library(ggplot2)
+ggplot(s_data, aes(close)) + geom_histogram(bins = 50, aes(y = ..density..), col = "red", fill = "red", alpha = 0.3) + geom_density()# + xlim(c(0, 1000))
+
+
+
+```
+
+
+Filtering the Data for only Ticker NFLX (Netflix)
+
+```{r}
+#library(stringr)
+i_stock =filter(s_data, s_data$Name == "NFLX")
+
+```
+
+
+
+
+
+Creating the Time Series
+
+```{r}
+
+i_stock_ts = ts(i_stock$close , start = c(2013,2) , end=c(2017,6), frequency = 12)
+
+train1 <- ts(i_stock$close, start = c(2013,2) , end= c(2016,6), frequency = 12)
+
+
+
+test1 <- ts(i_stock$close,start = c(2016,6) , end=c(2017,6) ,frequency = 12)
+```
+```{r}
+View(i_stock_ts)
+```
+
+```{r}
+tail(train1,10)
+
+```
+
+
+```{r}
+head(test1,10)
+```
+
+
+```{r}
+a <- ndiffs(train1)
+a
+```
+
+
+```{r}
+tsdisplay(i_stock_ts)
+```
+
+
+
+CHECK FOR STATIONARITY
+
+KPSS TEST
+```{r}
+#Stationarity
+library(urca)
+
+kpss.test(train1, null = c("Level"))
+
+
+```
+
+```{r}
+kpss.test(i_stock_ts, null = c("Trend"))
+```
+
+
+
+The null hypothesis is rejected at the 95% confidence intervals.
+
+
+A major disadvantage for the KPSS test is that it has a high rate of Type I errors (it tends to reject the null hypothesis too often). If attempts are made to control these errors (by having larger p-values), then that negatively impacts the test's power.
+One way to deal with the potential for high Type I errors is to combine the KPSS with an ADF test. If the result from both tests suggests that the time series in stationary, then it probably is.
+
+
+ADF TEST
+
+```{r}
+adf.test(i_stock_ts)
+```
+
+The ADF Test Suggests that the data is stationary.
+
+
+```{r}
+#Decomposing Time Series
+
+i_tscomponents <- stl(train1,window(100))
+plot(i_tscomponents, col = "red")
+
+```
+
+TO CHECK IF THE DIFFERENCING IS REQUIRED
+
+```{r}
+a <- ndiffs(train1)
+a
+```
+
+
+SEASONALLY ADJUSTING THE DATA
+```{r}
+plot(train1, col="grey",
+     main="Seasonally Adjusted Data",
+     xlab="Year", ylab="Stock Price")
+lines(seasadj(i_tscomponents),col="red",ylab="Seasonally adjusted")
+```
+
+2x12-MA Model
+```{r}
+plot(i_stock_ts, main="2x12-MA Model",
+     ylab="GWh", xlab="Year")
+lines(ma(ma(i_stock_ts,2),12),col="blue")
+```
+
+
+
+RANDOM WALK MODEL
+```{r}
+rrr <- rwf(train1)
+plot(rrr)
+```
+
+```{r}
+accuracy(rrr,test1)
+```
+
+
+
+HOLT WINTER MULTIPLICATIVE FORECASTING
+
+```{r}
+fit2 <- hw(train1,seasonal="multiplicative",damped = TRUE,h=12)
+autoplot(train1) +
+  autolayer(fit2, series="HW multiplicative forecasts",PI=FALSE) +
+  xlab("Year") +
+  ylab("Stocks Prices") +
+  ggtitle("HW multiplicative forecasts") +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+
+FINDING THE ACCURACY OF HW MULTIPLICATIVE
+```{r}
+accuracy(fit2 , test1)
+
+```
+
+
+
+HOLT WINTER ADDITIVE FORECASTING
+
+```{r}
+fit1 <- hw(train1,seasonal="additive",h=12)
+autoplot(train1) +
+  autolayer(fit1, series="HW additive forecasts", PI=FALSE) +
+  xlab("Year") +
+  ylab("Stocks Prices") +
+  ggtitle("HW additive forecasts") +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+FINDING THE ACCURACY OF HW ADDITIVE
+```{r}
+accuracy(fit1 , test1)
+```
+
+
+
+SEASONAL NAIVE FORECASTING
+
+```{r}
+seasonal_naive_forecast = snaive(train1,12)
+```
+
+Plotting the results of the seasonal forecast
+```{r}
+autoplot(train1)+
+  #autolayer(test1)+
+  autolayer(seasonal_naive_forecast, series="Seasonal naÃive", PI=FALSE) +
+  xlab("Year") +
+  ylab("Stocks Prices") +
+  ggtitle("Seasonal Naive's Forecast") +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+
+ACCURACY OF SEASONAL NAIVE
+```{r}
+accuracy(seasonal_naive_forecast , test1)
+```
+
+
+FITTING AN ARIMA MODEL
+
+```{r}
+i_tsarima <- auto.arima(train1)
+i_tsarima
+```
+
+```{r}
+library(forecast)
+fit.arima <- forecast(i_tsarima, h=12)
+```
+
+Plotting the Forecasts
+
+```{r}
+plot(fit.arima)
+```
+
+FINDING THE ACCURACY OF THE ARIMA MODEL
+```{r}
+accuracy(fit.arima , test1)
+
+```
+
+
+
+
+
+
+PLOTTING ALL THE MODELS TO VIEW THE PERFORMANCE
+
+```{r}
+autoplot(train1)+
+  #autolayer(test1)+
+  autolayer(seasonal_naive_forecast, series="Seasonal naÃive", PI=FALSE) +
+  autolayer(fit1, series="HW additive forecasts", PI=FALSE) +
+  autolayer(fit2, series="HW multiplicative forecasts",PI=FALSE) +
+  autolayer(fit.arima, series="Arima forecasts",PI=FALSE) +
+  xlab("Year") +
+  ylab("STOCK PRICE") +
+  ggtitle("Seasonal Naive's Forecast") +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+
+
+FINDING THE ACCURACY OF ALL THE MODELS
+
+
+
+
+
+
+
+
